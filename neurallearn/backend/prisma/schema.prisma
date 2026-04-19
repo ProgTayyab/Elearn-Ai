@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int              @id @default(autoincrement())
+  email              String           @unique
+  passwordHash       String
+  name               String
+  streak             Int              @default(0)
+  totalStudyMinutes  Int              @default(0)
+
+  courses            Course[]
+  performances       Performance[]
+  riskPredictions    RiskPrediction[]
+  chatMessages       ChatMessage[]
+  quizAttempts       QuizAttempt[]
+  refreshTokens      RefreshToken[]
+}
+
+model Course {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  title         String
+  topic         String
+  difficulty    String
+  durationWeeks Int
+  status        String
+
+  user          User        @relation(fields: [userId], references: [id])
+  modules       Module[]
+  performances  Performance[]
+  risks         RiskPrediction[]
+  chats         ChatMessage[]
+}
+
+model Module {
+  id           Int      @id @default(autoincrement())
+  courseId     Int
+  weekNumber   Int
+  title        String
+  description  String
+  status       String
+  order        Int
+
+  course       Course   @relation(fields: [courseId], references: [id])
+
+  objectives   ModuleObjective[]
+  resources    Resource[]
+  assignments  Assignment[]
+  quizzes      Quiz[]
+}
+
+model ModuleObjective {
+  id        Int     @id @default(autoincrement())
+  moduleId  Int
+  text      String
+  completed Boolean @default(false)
+
+  module    Module  @relation(fields: [moduleId], references: [id])
+}
+
+model Resource {
+  id        Int    @id @default(autoincrement())
+  moduleId  Int
+  type      String
+  title     String
+  url       String
+  source    String
+  readTime  Int
+
+  module    Module @relation(fields: [moduleId], references: [id])
+}
+
+model Assignment {
+  id          Int    @id @default(autoincrement())
+  moduleId    Int
+  title       String
+  description String
+  difficulty  String
+  language    String
+  status      String
+
+  module      Module @relation(fields: [moduleId], references: [id])
+}
+
+model Quiz {
+  id          Int      @id @default(autoincrement())
+  moduleId    Int
+  generatedAt DateTime @default(now())
+
+  module      Module       @relation(fields: [moduleId], references: [id])
+  questions   Question[]
+  attempts    QuizAttempt[]
+}
+
+model Question {
+  id        Int     @id @default(autoincrement())
+  quizId    Int
+  text      String
+  type      String
+  order     Int
+
+  quiz      Quiz        @relation(fields: [quizId], references: [id])
+  options   QuizOption[]
+}
+
+model QuizOption {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  text       String
+  isCorrect  Boolean
+
+  question   Question @relation(fields: [questionId], references: [id])
+}
+
+model QuizAttempt {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  quizId    Int
+  score     Float
+  timeTaken Int
+  answers   Json
+
+  user      User     @relation(fields: [userId], references: [id])
+  quiz      Quiz     @relation(fields: [quizId], references: [id])
+}
+
+model Performance {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  courseId        Int
+  date            DateTime
+  avgScore        Float
+  minutesStudied  Int
+
+  user            User     @relation(fields: [userId], references: [id])
+  course          Course   @relation(fields: [courseId], references: [id])
+}
+
+model RiskPrediction {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  courseId    Int
+  riskLevel   String
+  predictedAt DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+  course      Course   @relation(fields: [courseId], references: [id])
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  courseId  Int
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
