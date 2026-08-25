@@ -35,6 +35,12 @@ __pycache__/
 
 # Expo
 .expo/
+expo-qr.*
+
+# Uploads / local DB
+backend/uploads/
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
 
 # Package locks (optional — remove if you want to track them)
 # package-lock.json

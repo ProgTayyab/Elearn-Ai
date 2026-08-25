@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int              @id @default(autoincrement())
+  email              String           @unique
+  passwordHash       String
+  name               String
+  username           String?          @unique
+  profilePicture     String?
+  preferences        String           @default("{}")
+  streak             Int              @default(0)
+  totalStudyMinutes  Int              @default(0)
+  createdAt          DateTime         @default(now())
+  lastLoginAt        DateTime?
+
+  courses            Course[]
+  performances       Performance[]
+  riskPredictions    RiskPrediction[]
+  chatMessages       ChatMessage[]
+  quizAttempts       QuizAttempt[]
+  refreshTokens      RefreshToken[]
+
+  @@index([email])
+}
+
+model Course {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  title         String
+  topic         String
+  difficulty    String
+  durationWeeks Int
+  status        String
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modules       Module[]
+  performances  Performance[]
+  risks         RiskPrediction[]
+  chats         ChatMessage[]
+
+  @@index([userId])
+}
+
+model Module {
+  id                 Int       @id @default(autoincrement())
+  courseId           Int
+  weekNumber         Int
+  title              String
+  description        String
+  status             String
+  order              Int
+  summaryDocument    String?
+  summaryGeneratedAt DateTime?
+
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  objectives   ModuleObjective[]
+  resources    Resource[]
+  assignments  Assignment[]
+  quizzes      Quiz[]
+
+  @@index([courseId])
+}
+
+model ModuleObjective {
+  id        Int     @id @default(autoincrement())
+  moduleId  Int
+  text      String
+  completed Boolean @default(false)
+
+  module    Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@index([moduleId])
+}
+
+model Resource {
+  id        Int    @id @default(autoincrement())
+  moduleId  Int
+  type      String
+  title     String
+  url       String
+  source    String
+  readTime  Int
+
+  module    Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@index([moduleId])
+}
+
+model Assignment {
+  id                Int       @id @default(autoincrement())
+  moduleId          Int
+  title             String
+  description       String
+  difficulty        String
+  language          String
+  status            String
+  pdfPath           String?
+  submissionPdfPath String?
+  score             Float?
+  feedback          String?
+  rubric            String?
+  maxScore          Int       @default(100)
+  gradedAt          DateTime?
+
+  module      Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@index([moduleId])
+}
+
+model Quiz {
+  id          Int      @id @default(autoincrement())
+  moduleId    Int
+  generatedAt DateTime @default(now())
+
+  module      Module       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questions   Question[]
+  attempts    QuizAttempt[]
+
+  @@index([moduleId])
+}
+
+model Question {
+  id        Int     @id @default(autoincrement())
+  quizId    Int
+  text      String
+  type      String
+  order     Int
+
+  quiz      Quiz        @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options   QuizOption[]
+
+  @@index([quizId])
+}
+
+model QuizOption {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  text       String
+  isCorrect  Boolean
+
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model QuizAttempt {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  quizId    Int
+  score     Float
+  timeTaken Int
+  answers   String
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([quizId])
+}
+
+model Performance {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  courseId        Int
+  date            DateTime
+  avgScore        Float
+  minutesStudied  Int
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+}
+
+model RiskPrediction {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  courseId    Int
+  riskLevel   String
+  predictedAt DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  courseId  Int
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([userId, courseId])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
